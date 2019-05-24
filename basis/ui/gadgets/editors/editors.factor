@@ -11,7 +11,6 @@ ui.render ui.text ui.theme unicode ;
 IN: ui.gadgets.editors
 
 TUPLE: editor < line-gadget
-    caret-color
     caret mark
     focused? blink blink-timer
     default-text
@@ -171,7 +170,6 @@ M: editor ungraft*
     { [ focused?>> ] [ blink>> ]
       [ [ preedit? not ] [ preedit-selecting?>> not ] bi or ] } 1&& ;
 
-USE: colors 
 : draw-caret ( editor -- )
     dup draw-caret? [
         [ editor-caret-color gl-color ] dip

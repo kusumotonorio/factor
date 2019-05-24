@@ -184,22 +184,6 @@ M: send-touchbar-command send-queued-gesture
         yield
     ] [ 3drop ] if ;
 
-: remove-preedit-text ( editor -- )
-    { [ preedit-start>> ] [ set-caret ]
-      [ preedit-end>> ] [ set-mark ]
-      [ remove-selection ]
-    } cleave ;
-
-: remove-preedit-info ( editor -- )
-    f >>preedit-start
-    f >>preedit-end
-    f >>preedit-selected-start
-    f >>preedit-selected-end
-    drop ;
-
-: editor-selected-range ( editor -- location length )
-    [ editor-mark second ] [ editor-caret second ] bi sort-pair over - ;
-
 CONSTANT: NSNotFound 9223372036854775807 inline
 
 IMPORT: NSAttributedString
@@ -221,7 +205,7 @@ IMPORT: NSAttributedString
                 cached-lines get-global clear-assoc
             ] [ drop ] if
 
-            self -> update   
+            self -> update
         ] when
     ] ;
 
@@ -378,7 +362,6 @@ IMPORT: NSAttributedString
     ] ;
 
     ! Text input
-
     METHOD: void insertText: id text
     [
         self window :> window
