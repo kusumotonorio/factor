@@ -22,21 +22,11 @@ TUPLE: editor < line-gadget
     preedit-underlines
     preedit-selecting? ;
 
-! GENERIC: support-input-methods? ( gadget -- ? )
-! M: gadget support-input-methods? drop f ;
-! M: editor support-input-methods? drop t ;
-
 GENERIC: preedit? ( gadget -- ? )
+
 M: gadget preedit? drop f ;
+
 M: editor preedit? preedit-start>> [ t ] [ f ] if ;
-
-! DEFER: caret-loc
-! DEFER: caret-dim
-! GENERIC: cursor-loc&dim ( gadget -- loc dim )
-! M: gadget cursor-loc&dim drop f f ;
-! M: editor cursor-loc&dim
-!     [ caret-loc ] [ caret-dim ] bi ;
-
 
 <PRIVATE
 
@@ -47,7 +37,6 @@ M: editor preedit? preedit-start>> [ t ] [ f ] if ;
     <loc> >>mark ; inline
 
 : editor-theme ( editor -- editor )
-    COLOR: red >>caret-color
     monospace-font >>font ; inline
 
 PRIVATE>
@@ -117,9 +106,8 @@ M: editor ungraft*
 : set-caret ( loc editor -- )
     [ model>> validate-loc ] [ caret>> ] bi set-model ;
 
-: set-mark ( loc editor -- ) ! 2019-04-12
+: set-mark ( loc editor -- )
     [ model>> validate-loc ] [ mark>> ] bi set-model ;
-
 
 : change-caret ( editor quot: ( loc document -- newloc ) -- )
     [ [ [ editor-caret ] [ model>> ] bi ] dip call ] [ drop ] 2bi
@@ -186,13 +174,9 @@ M: editor ungraft*
 USE: colors 
 : draw-caret ( editor -- )
     dup draw-caret? [
-        [ caret-color>>
-          dup [ drop T{ rgba f 0.0 0.0 0.0 1.0 } ] unless
-          gl-color ]
-        [
-            [ caret-loc ] [ caret-dim ] bi
-            over v+ gl-line
-        ] bi
+        [ editor-caret-color gl-color ] dip
+        [ caret-loc ] [ caret-dim ] bi
+        over v+ gl-line
     ] [ drop ] if ;
 
 USING: ui.gadgets.worlds ui.backend.cocoa.views opengl.gl ;
@@ -234,8 +218,8 @@ TUPLE: selected-line start end first? last? ;
     pair second pair first - round 1 max editor line-height 2array
     gl-fill-rect ;
 
-:: draw-unselected-line ( line editor -- )
-    line editor font>> swap draw-text ;
+: draw-unselected-line ( line editor -- )
+    font>> swap draw-text ;
 
 : draw-selected-line ( line pair editor -- )
     over all-equal? [
@@ -727,4 +711,3 @@ TUPLE: action-field < field quot ;
 action-field H{
     { T{ key-down f f "RET" } [ invoke-action-field ] }
 } set-gestures
-

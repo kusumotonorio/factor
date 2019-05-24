@@ -8,12 +8,10 @@ core-graphics core-graphics.types core-text io.encodings.utf8
 kernel literals locals math math.order math.parser
 math.rectangles namespaces opengl sequences splitting threads
 ui.commands ui.gadgets ui.gadgets.private ui.gadgets.worlds
-ui.gestures ui.private words 
-ui.gadgets.editors sorting documents math.vectors
+ui.gestures ui.private words sorting documents math.vectors
 ui.baseline-alignment ui.gadgets.line-support
-ui.backend.cocoa.input-methods
+ui.gadgets.editors ui.backend.cocoa.input-methods
 ui.backend.cocoa.input-methods.editors ;
-
 IN: ui.backend.cocoa.views
 
 : send-mouse-moved ( view event -- )
@@ -223,6 +221,7 @@ IMPORT: NSAttributedString
                 cached-lines get-global clear-assoc
             ] [ drop ] if
 
+            self -> update   
         ] when
     ] ;
 
@@ -391,24 +390,19 @@ IMPORT: NSAttributedString
                    [ remove-preedit-text ]
                    [ remove-preedit-info ] bi
                    text CF>string
-                   ! window user-input
                    gadget user-input* drop
 
                ] [
                    text CF>string
-                   ! window user-input
                    gadget user-input* drop
                ] if
                f gadget preedit-selecting?<<
            ] [ 
                text CF>string
                window user-input
-               ! gadget user-input* drop
            ] if
         ] when
     ] ;
-
-!    METHOD: char hasMarkedText [ 0 ] ;
 
     METHOD: char hasMarkedText [
             self window :> window
@@ -419,8 +413,6 @@ IMPORT: NSAttributedString
                 ] [ 0 ] if
             ] [ 0 ] if
         ] ;
-
-!    METHOD: NSRange markedRange [ 0 0 <NSRange> ] ;
 
     METHOD: NSRange markedRange [ 
             self window :> window
@@ -437,8 +429,6 @@ IMPORT: NSAttributedString
                 ] [ NSNotFound 0 <NSRange> ] if
             ] [ NSNotFound 0 <NSRange> ] if 
         ] ;
-
-!    METHOD: NSRange selectedRange [ 0 0 <NSRange> ] ;
 
     METHOD: NSRange selectedRange [
             self window :> window
@@ -457,9 +447,6 @@ IMPORT: NSAttributedString
                 ] [ 0 0  <NSRange> ] if
             ] [ 0 0 <NSRange> ] if 
         ] ;
-    
-
-!    METHOD: void setMarkedText: id text selectedRange: NSRange range [ ] ;
 
     METHOD: void setMarkedText: id text selectedRange: NSRange range [    
             self window :> window
@@ -470,7 +457,6 @@ IMPORT: NSAttributedString
                     text CF>string str!               
                 ] [
                     text -> string CF>string str!
-
                     window world-focus :> gadget
                     gadget support-input-methods? [
                         text -> length :> text-length
@@ -478,7 +464,6 @@ IMPORT: NSAttributedString
                         "NSMarkedClauseSegment" <NSString> :> segment-attr
                         [ effective-range [ location>> ] [ length>> ] bi + text-length < ] [
                             text
-                            ! segment-attr
                             effective-range [ location>> ] [ length>> ] bi +
                             effective-range >c-ptr
                             -> attributesAtIndex:effectiveRange: drop
@@ -503,7 +488,6 @@ IMPORT: NSAttributedString
                     gadget preedit-start<<
                     0 str length 2array v+ gadget preedit-end<<
                     str
-                    ! window user-input
                     gadget user-input* drop
                     
                     gadget preedit-start>> 0 range location>> 2array v+ 
@@ -514,13 +498,11 @@ IMPORT: NSAttributedString
                     gadget preedit-start>> gadget preedit-end>> = [
                         gadget remove-preedit-info 
                     ] when
-
+                    
                     underlines gadget preedit-underlines<<
                 ] when
             ] when
         ] ;
-
-!    METHOD: void unmarkText [ ] ;
 
     METHOD: void unmarkText [ 
             self window :> window
@@ -531,15 +513,12 @@ IMPORT: NSAttributedString
                         gadget preedit-start>> second gadget preedit-end>> second
                         gadget preedit-start>> first gadget editor-line subseq
                         gadget [ remove-preedit-text ] [ remove-preedit-info ] bi
-                        ! window user-input
                         gadget user-input* drop
                     ] when
                     f gadget preedit-selecting?<<
                 ] when
             ] when
         ] ;
-    
-!    METHOD: id validAttributesForMarkedText [ NSArray -> array ] ;
 
      METHOD: id validAttributesForMarkedText [             
              NSArray "NSMarkedClauseSegment" <NSString> -> arrayWithObject:
@@ -548,8 +527,6 @@ IMPORT: NSAttributedString
     METHOD: id attributedSubstringFromRange: NSRange range [ f ] ;
 
     METHOD: NSUInteger characterIndexForPoint: NSPoint point [ 0 ] ;
-
-!    METHOD: NSRect firstRectForCharacterRange: NSRange range [ 0 0 0 0 <CGRect> ] ;
 
     METHOD: NSRect firstRectForCharacterRange: NSRange range [
             self window :> window
