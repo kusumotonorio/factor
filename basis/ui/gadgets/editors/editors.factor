@@ -11,9 +11,32 @@ ui.render ui.text ui.theme unicode ;
 IN: ui.gadgets.editors
 
 TUPLE: editor < line-gadget
+    caret-color
     caret mark
     focused? blink blink-timer
-    default-text ;
+    default-text
+    preedit-start
+    preedit-end
+    preedit-selected-start
+    preedit-selected-end
+    preedit-underlines
+    preedit-selecting? ;
+
+! GENERIC: support-input-methods? ( gadget -- ? )
+! M: gadget support-input-methods? drop f ;
+! M: editor support-input-methods? drop t ;
+
+GENERIC: preedit? ( gadget -- ? )
+M: gadget preedit? drop f ;
+M: editor preedit? preedit-start>> [ t ] [ f ] if ;
+
+! DEFER: caret-loc
+! DEFER: caret-dim
+! GENERIC: cursor-loc&dim ( gadget -- loc dim )
+! M: gadget cursor-loc&dim drop f f ;
+! M: editor cursor-loc&dim
+!     [ caret-loc ] [ caret-dim ] bi ;
+
 
 <PRIVATE
 
@@ -24,6 +47,7 @@ TUPLE: editor < line-gadget
     <loc> >>mark ; inline
 
 : editor-theme ( editor -- editor )
+    COLOR: red >>caret-color
     monospace-font >>font ; inline
 
 PRIVATE>
@@ -93,6 +117,10 @@ M: editor ungraft*
 : set-caret ( loc editor -- )
     [ model>> validate-loc ] [ caret>> ] bi set-model ;
 
+: set-mark ( loc editor -- ) ! 2019-04-12
+    [ model>> validate-loc ] [ mark>> ] bi set-model ;
+
+
 : change-caret ( editor quot: ( loc document -- newloc ) -- )
     [ [ [ editor-caret ] [ model>> ] bi ] dip call ] [ drop ] 2bi
     set-caret ; inline
@@ -152,14 +180,38 @@ M: editor ungraft*
 <PRIVATE
 
 : draw-caret? ( editor -- ? )
-    { [ focused?>> ] [ blink>> ] } 1&& ;
+    { [ focused?>> ] [ blink>> ]
+      [ [ preedit? not ] [ preedit-selecting?>> not ] bi or ] } 1&& ;
 
+USE: colors 
 : draw-caret ( editor -- )
     dup draw-caret? [
-        [ editor-caret-color gl-color ] dip
-        [ caret-loc ] [ caret-dim ] bi
-        over v+ gl-line
+        [ caret-color>>
+          dup [ drop T{ rgba f 0.0 0.0 0.0 1.0 } ] unless
+          gl-color ]
+        [
+            [ caret-loc ] [ caret-dim ] bi
+            over v+ gl-line
+        ] bi
     ] [ drop ] if ;
+
+USING: ui.gadgets.worlds ui.backend.cocoa.views opengl.gl ;
+:: draw-preedit-underlines ( editor -- )
+    editor preedit? [
+        editor [ caret-loc second ] [ caret-dim second ] bi + 2.0 - :> y
+        editor editor-caret first :> row
+        editor font>> foreground>> gl-color
+        editor preedit-underlines>> [            
+            GL_LINE_BIT [
+                dup second glLineWidth
+                first editor preedit-start>> second dup 2array v+ first2 
+                [ row swap 2array editor loc>x 2.0 + y 2array ]
+                [ row swap 2array editor loc>x 2.0 - y 2array ]
+                bi*
+                gl-line
+            ] do-attribs
+        ] each
+    ] when ;
 
 : selection-start/end ( editor -- start end )
     [ editor-mark ] [ editor-caret ] bi sort-pair ;
@@ -182,8 +234,8 @@ TUPLE: selected-line start end first? last? ;
     pair second pair first - round 1 max editor line-height 2array
     gl-fill-rect ;
 
-: draw-unselected-line ( line editor -- )
-    font>> swap draw-text ;
+:: draw-unselected-line ( line editor -- )
+    line editor font>> swap draw-text ;
 
 : draw-selected-line ( line pair editor -- )
     over all-equal? [
@@ -211,10 +263,10 @@ M: editor draw-line ( line index editor -- )
 
 M: editor draw-gadget*
     dup draw-default-text? [
-        [ draw-default-text ] [ draw-caret ] bi
+        [ draw-default-text ] [ draw-caret ] [ draw-preedit-underlines ] tri
     ] [
         dup compute-selection selected-lines [
-            [ draw-lines ] [ draw-caret ] bi
+            [ draw-lines ] [ draw-caret ] [ draw-preedit-underlines ] tri
         ] with-variable
     ] if ;
 
@@ -675,3 +727,4 @@ TUPLE: action-field < field quot ;
 action-field H{
     { T{ key-down f f "RET" } [ invoke-action-field ] }
 } set-gestures
+
