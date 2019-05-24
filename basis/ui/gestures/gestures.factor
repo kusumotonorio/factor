@@ -3,7 +3,8 @@
 USING: accessors arrays ascii assocs boxes calendar classes columns
 combinators combinators.short-circuit deques fry kernel make math
 math.order math.parser math.vectors namespaces sequences sets system
-timers ui.gadgets ui.gadgets.private words ;
+timers ui.gadgets ui.gadgets.private words 
+locals ui.gadgets.editors ui.backend.cocoa.input-methods ;
 IN: ui.gestures
 
 : get-gesture-handler ( gesture gadget -- quot )
@@ -63,8 +64,15 @@ M: propagate-key-gesture-tuple send-queued-gesture
     [ gesture>> ] [ world>> world-focus ] bi
     [ handle-gesture ] with each-parent drop ;
 
-: propagate-key-gesture ( gesture world -- )
-    \ propagate-key-gesture-tuple queue-gesture ;
+:: propagate-key-gesture ( gesture world -- )
+    world world-focus :> gadget
+    gadget support-input-methods? [
+        gadget preedit? [
+            gesture world \ propagate-key-gesture-tuple queue-gesture
+        ] unless
+    ] [
+        gesture world \ propagate-key-gesture-tuple queue-gesture
+    ] if ;
 
 TUPLE: user-input-tuple string world ;
 
