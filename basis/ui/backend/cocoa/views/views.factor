@@ -188,6 +188,46 @@ CONSTANT: NSNotFound 9223372036854775807 inline
 
 IMPORT: NSAttributedString
 
+:: make-preedit-underlines ( gadget text range -- underlines )
+    { } clone :> underlines!
+    text -> length :> text-length
+    0 0 <NSRange> :> effective-range
+    "NSMarkedClauseSegment" <NSString> :> segment-attr
+    [ effective-range [ location>> ] [ length>> ] bi + text-length < ] [
+        text
+        effective-range [ location>> ] [ length>> ] bi +
+        effective-range >c-ptr
+        -> attributesAtIndex:effectiveRange: drop
+        1 :> thickness!
+        range location>> effective-range location>> = [
+            2 thickness!
+            t gadget preedit-candidate?<<
+        ] when
+        underlines
+        effective-range [ location>> ] [ length>> ] bi over +
+        2array thickness 2array
+        suffix underlines! 
+    ] while
+    underlines ;
+
+:: update-marked-text ( gadget str range -- )
+    gadget preedit? [
+        gadget remove-preedit-text
+    ] when
+    gadget editor-caret dup
+    gadget preedit-start<<
+    0 str length 2array v+ gadget preedit-end<<
+    str gadget user-input* drop
+    
+    gadget preedit-start>> 0 range location>> 2array v+ 
+    gadget preedit-selected-start<<
+    gadget preedit-selected-start>> 0 range length>> 2array v+ 
+    dup gadget preedit-selected-end<<            
+    dup gadget set-caret gadget set-mark                    
+    gadget preedit-start>> gadget preedit-end>> = [
+        gadget remove-preedit-info 
+    ] when ;
+
 <CLASS: FactorView < NSOpenGLView
     COCOA-PROTOCOL: NSTextInput
 
@@ -429,6 +469,7 @@ IMPORT: NSAttributedString
 
     METHOD: void setMarkedText: id text selectedRange: NSRange range [    
             self window :> window
+            window world-focus :> gadget
             { } clone :> underlines!
             window [
                 "" clone :> str!
@@ -436,47 +477,12 @@ IMPORT: NSAttributedString
                     text CF>string str!               
                 ] [
                     text -> string CF>string str!
-                    window world-focus :> gadget
                     gadget support-input-methods? [
-                        text -> length :> text-length
-                        0 0 <NSRange> :> effective-range
-                        "NSMarkedClauseSegment" <NSString> :> segment-attr
-                        [ effective-range [ location>> ] [ length>> ] bi + text-length < ] [
-                            text
-                            effective-range [ location>> ] [ length>> ] bi +
-                            effective-range >c-ptr
-                            -> attributesAtIndex:effectiveRange: drop
-                            1 :> thickness!
-                            range location>> effective-range location>> = [
-                                2 thickness!
-                                t gadget preedit-candidate?<<
-                            ] when
-                            underlines
-                            effective-range [ location>> ] [ length>> ] bi over +
-                            2array thickness 2array
-                            suffix underlines! 
-                        ] while
+                        gadget text range make-preedit-underlines underlines!
                     ] when
                 ] if
-                window world-focus :> gadget
                 gadget support-input-methods? [
-                    gadget preedit? [
-                        gadget remove-preedit-text
-                    ] when
-                    gadget editor-caret dup
-                    gadget preedit-start<<
-                    0 str length 2array v+ gadget preedit-end<<
-                    str gadget user-input* drop
-                    
-                    gadget preedit-start>> 0 range location>> 2array v+ 
-                    gadget preedit-selected-start<<
-                    gadget preedit-selected-start>> 0 range length>> 2array v+ 
-                    dup gadget preedit-selected-end<<            
-                    dup gadget set-caret gadget set-mark                    
-                    gadget preedit-start>> gadget preedit-end>> = [
-                        gadget remove-preedit-info 
-                    ] when
-                    
+                    gadget str range update-marked-text                   
                     underlines gadget preedit-underlines<<
                 ] when
             ] when
