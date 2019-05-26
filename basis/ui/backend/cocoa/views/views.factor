@@ -379,7 +379,7 @@ IMPORT: NSAttributedString
                    text CF>string
                    gadget user-input* drop
                ] if
-               f gadget preedit-selecting?<<
+               f gadget preedit-candidate?<<
            ] [ 
                text CF>string
                window user-input
@@ -453,7 +453,7 @@ IMPORT: NSAttributedString
                             1 :> thickness!
                             range location>> effective-range location>> = [
                                 2 thickness!
-                                t gadget preedit-selecting?<<
+                                t gadget preedit-candidate?<<
                             ] when
                             underlines
                             effective-range [ location>> ] [ length>> ] bi over +
@@ -498,7 +498,7 @@ IMPORT: NSAttributedString
                         gadget [ remove-preedit-text ] [ remove-preedit-info ] bi
                         gadget user-input* drop
                     ] when
-                    f gadget preedit-selecting?<<
+                    f gadget preedit-candidate?<<
                 ] when
             ] when
         ] ;
@@ -517,9 +517,11 @@ IMPORT: NSAttributedString
                 window world-focus :> gadget
                 gadget screen-loc
                 gadget editor-caret first range location>> 2array gadget loc>x dup :> xl
-                gadget caret-loc second gadget caret-dim second + 22 + 
+                gadget caret-loc second gadget caret-dim second + 
                 [ >fixnum ] bi@ 2array v+ { 1 -1 } v*
-                window window-loc>> v+ first2
+                window handle>> window>> dup -> frame -> contentRectForFrameRect:
+                CGRect-top-left 2array
+                v+ first2
                 gadget editor-caret first range [ location>> ] [ length>> ] bi + 2array
                 gadget [ loc>x xl - ] [ line-height ] bi [ >fixnum ] bi@
                 <CGRect>
@@ -565,7 +567,7 @@ IMPORT: NSAttributedString
 
 : save-position ( world window -- )
     -> frame CGRect-top-left 2array >>window-loc drop ;
-
+    
 <CLASS: FactorWindowDelegate < NSObject
 
     METHOD: void windowDidMove: id notification

@@ -66,13 +66,9 @@ M: propagate-key-gesture-tuple send-queued-gesture
 
 :: propagate-key-gesture ( gesture world -- )
     world world-focus :> gadget
-    gadget support-input-methods? [
-        gadget preedit? [
-            gesture world \ propagate-key-gesture-tuple queue-gesture
-        ] unless
-    ] [
+    gadget preedit? [
         gesture world \ propagate-key-gesture-tuple queue-gesture
-    ] if ;
+    ] unless ;
 
 TUPLE: user-input-tuple string world ;
 
