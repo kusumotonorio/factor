@@ -372,17 +372,13 @@ IMPORT: NSAttributedString
                    gadget
                    [ remove-preedit-text ]
                    [ remove-preedit-info ] bi
-                   text CF>string
-                   gadget user-input* drop
-
+                   text CF>string gadget user-input* drop
                ] [
-                   text CF>string
-                   gadget user-input* drop
+                   text CF>string gadget user-input* drop
                ] if
                f gadget preedit-candidate?<<
            ] [ 
-               text CF>string
-               window user-input
+               text CF>string window user-input
            ] if
         ] when
     ] ;
@@ -470,8 +466,7 @@ IMPORT: NSAttributedString
                     gadget editor-caret dup
                     gadget preedit-start<<
                     0 str length 2array v+ gadget preedit-end<<
-                    str
-                    gadget user-input* drop
+                    str gadget user-input* drop
                     
                     gadget preedit-start>> 0 range location>> 2array v+ 
                     gadget preedit-selected-start<<
@@ -567,7 +562,7 @@ IMPORT: NSAttributedString
 
 : save-position ( world window -- )
     -> frame CGRect-top-left 2array >>window-loc drop ;
-    
+
 <CLASS: FactorWindowDelegate < NSObject
 
     METHOD: void windowDidMove: id notification

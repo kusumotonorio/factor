@@ -7,7 +7,7 @@ math.rectangles math.vectors models models.arrow namespaces opengl
 sequences sorting splitting timers ui.baseline-alignment ui.clipboards
 ui.commands ui.gadgets ui.gadgets.borders ui.gadgets.line-support
 ui.gadgets.menus ui.gadgets.scrollers ui.gestures ui.pens.solid
-ui.render ui.text ui.theme unicode ;
+ui.render ui.text ui.theme unicode opengl.gl ;
 IN: ui.gadgets.editors
 
 TUPLE: editor < line-gadget
@@ -18,8 +18,8 @@ TUPLE: editor < line-gadget
     preedit-end
     preedit-selected-start
     preedit-selected-end
-    preedit-underlines
-    preedit-candidate? ;
+    preedit-candidate?
+    preedit-underlines ;
 
 GENERIC: preedit? ( gadget -- ? )
 
@@ -177,7 +177,6 @@ M: editor ungraft*
         over v+ gl-line
     ] [ drop ] if ;
 
-USING: ui.gadgets.worlds ui.backend.cocoa.views opengl.gl ;
 :: draw-preedit-underlines ( editor -- )
     editor preedit? [
         editor [ caret-loc second ] [ caret-dim second ] bi + 2.0 - :> y
@@ -305,6 +304,22 @@ M: editor gadget-text* editor-string % ;
     [ request-focus ]
     [ restart-blinking ]
     [ dup caret>> click-loc ] tri ;
+
+: remove-preedit-text ( editor -- )
+    { [ preedit-start>> ] [ set-caret ]
+      [ preedit-end>> ] [ set-mark ]
+      [ remove-selection ]
+    } cleave ;
+
+: remove-preedit-info ( editor -- )
+    f >>preedit-start
+    f >>preedit-end
+    f >>preedit-selected-start
+    f >>preedit-selected-end
+    drop ;
+
+: editor-selected-range ( editor -- location length )
+    [ editor-mark second ] [ editor-caret second ] bi sort-pair over - ;
 
 : mouse-elt ( -- element )
     hand-click# get {

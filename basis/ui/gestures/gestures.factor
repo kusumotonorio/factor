@@ -65,8 +65,7 @@ M: propagate-key-gesture-tuple send-queued-gesture
     [ handle-gesture ] with each-parent drop ;
 
 :: propagate-key-gesture ( gesture world -- )
-    world world-focus :> gadget
-    gadget preedit? [
+    world world-focus preedit? [
         gesture world \ propagate-key-gesture-tuple queue-gesture
     ] unless ;
 
