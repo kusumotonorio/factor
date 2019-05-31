@@ -58,13 +58,10 @@ CONSTANT: stylesheet
     ] ($block) ;
 
 : divider-interior ( -- interior )
-    os windows? [
-        T{ rgba f 0.25 0.25 0.25 1.0 } <solid>
-    ] [ {
-            T{ rgba f 0.25 0.25 0.25 1.0 }
-            T{ rgba f 1.0 1.0 1.0 0.0 }
-        } <gradient>
-    ] if ;
+    {
+        T{ rgba f 0.25 0.25 0.25 1.0 }
+        T{ rgba f 1.0 1.0 1.0 0.0 }
+    } <gradient> ;
 
 : $divider ( -- )
     [
@@ -76,13 +73,10 @@ CONSTANT: stylesheet
     ] ($block) ;
 
 : page-interior ( -- interior )
-    os windows? [
-        T{ rgba f 0.8 0.8 1.0 1.0 } <solid>
-    ] [ {
-            T{ rgba f 0.8 0.8 1.0 1.0 }
-            T{ rgba f 0.8 1.0 1.0 1.0 }
-        } <gradient>
-    ] if ;
+    {
+        T{ rgba f 0.8 0.8 1.0 1.0 }
+        T{ rgba f 0.8 1.0 1.0 1.0 }
+    } <gradient> ;
 
 : page-theme ( gadget -- gadget )
     page-interior >>interior ;

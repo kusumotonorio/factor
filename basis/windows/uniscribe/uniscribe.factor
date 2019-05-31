@@ -4,7 +4,8 @@ USING: accessors alien.c-types alien.data arrays assocs cache
 classes.struct combinators destructors fonts init io.encodings.string
 io.encodings.utf16n kernel literals locals math namespaces sequences
 windows.errors windows.fonts windows.gdi32 windows.offscreen
-windows.ole32 windows.types windows.usp10 ;
+windows.ole32 windows.types windows.usp10 windows.user32
+colors images math.vectors math.order ;
 IN: windows.uniscribe
 
 TUPLE: script-string < disposable font string metrics ssa size image ;
@@ -28,6 +29,8 @@ TUPLE: script-string < disposable font string metrics ssa size image ;
 
 <PRIVATE
 
+SYMBOLS: transparent? chroma-key-background ;
+
 CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 
 : make-ssa ( dc script-string -- ssa )
@@ -47,18 +50,33 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
     [ ScriptStringAnalyse ] keep
     [ check-ole32-error ] [ |ScriptStringFree void* deref ] bi* ;
 
-: set-dc-colors ( dc font -- )
-    [ background>> color>RGB SetBkColor drop ]
-    [ foreground>> color>RGB SetTextColor drop ] 2bi ;
+:: set-dc-colors ( dc font -- )
+    font background>> dup >rgba alpha>> 1 number= [
+        f transparent? set
+        dc swap color>RGB SetBkColor drop
+    ] [
+        drop
+        t transparent? set
+        font foreground>> [ red>> ] [ green>> ] [ blue>> ] tri :> ( r g b ) 
+        r g b max max  0.7 > [
+            { r g b } 0.2 v*n
+        ] [
+            { 1.0 1.0 1.0 } clone { r g b } v- 0.2 v*n { 1.0 1.0 1.0 } clone swap v-
+        ] if 
+        dup [ 255 * >integer ] map chroma-key-background set
+        first3 1.0 <rgba> dc swap color>RGB SetBkColor drop
+    ] if
+    dc font foreground>> color>RGB SetTextColor drop ;
 
 : selection-start/end ( script-string -- iMinSel iMaxSel )
     string>> dup selection? [ [ start>> ] [ end>> ] bi ] [ drop 0 0 ] if ;
 
-: draw-script-string ( ssa size script-string -- )
+:: draw-script-string ( dc ssa size script-string -- )
+    ssa size script-string
     [
         0 ! iX
         0 ! iY
-        ETO_OPAQUE ! uOptions
+        ETO_OPAQUE
     ]
     [ [ { 0 0 } ] dip <RECT> ]
     [ selection-start/end ] tri*
@@ -70,7 +88,7 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 :: render-image ( dc ssa script-string -- image )
     script-string size>> :> size
     size dc
-    [ ssa size script-string draw-script-string ] make-bitmap-image ;
+    [ dc ssa size script-string draw-script-string ] make-bitmap-image ;
 
 : set-dc-font ( dc font -- )
     cache-font SelectObject win32-error=0/f ;
@@ -107,15 +125,34 @@ SYMBOL: cached-script-strings
 : cached-script-string ( font string -- script-string )
     cached-script-strings get-global [ <script-string> ] 2cache ;
 
-: script-string>image ( script-string -- image )
-    dup image>> [
+:: script-string>image ( script-string -- image )
+    script-string dup image>> [
         [
             {
                 [ over font>> [ set-dc-font ] [ set-dc-colors ] 2bi ]
                 [
                     dup pick string>> make-ssa
                     dup void* <ref> &ScriptStringFree drop
-                    pick render-image >>image
+                    pick render-image :> chroma-key-image
+                    transparent? get [
+                        chroma-key-image [
+                            first3 :> ( b g r )
+                            chroma-key-background get { r g b } = [
+                                { 0 0 0 0 }
+                            ] [
+                                { r g b } chroma-key-background get v- norm-sq
+                                script-string font>> foreground>>
+                                [ red>> ] [ green>> ] [ blue>> ] tri
+                                [ 255 * >integer ] tri@ 3array
+                                chroma-key-background get v- norm-sq
+                                / 100 * 156 + >integer 255 min :> a 
+                                { b g r a }
+                            ] if
+                            clone -rot chroma-key-image set-pixel-at
+                        ] each-pixel
+                        BGRA chroma-key-image component-order<<
+                    ] when
+                    chroma-key-image >>image
                 ]
             } cleave
         ] with-memory-dc
