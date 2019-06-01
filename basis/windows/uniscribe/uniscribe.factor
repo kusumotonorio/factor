@@ -84,7 +84,7 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 
 :: render-image ( dc ssa script-string -- image )
     script-string size>> :> size
-    size dc 
+    size dc
     [ ssa size script-string draw-script-string ] make-bitmap-image ;
 
 : set-dc-font ( dc font -- )
@@ -159,7 +159,7 @@ SYMBOL: cached-script-strings
                     >>image
                 ]
             } cleave
-        ] with-memory-dc 
+        ] with-memory-dc
     ] unless image>> ;
 
 [ <cache-assoc> &dispose cached-script-strings set-global ]
