@@ -29,7 +29,7 @@ TUPLE: script-string < disposable font string metrics ssa size image ;
 
 <PRIVATE
 
-SYMBOLS: transparent? chroma-key-background ;
+SYMBOL: chroma-key-background
 
 CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 
@@ -52,13 +52,11 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 
 :: set-dc-colors ( dc font -- )
     font background>> dup >rgba alpha>> 1 number= [
-        f transparent? set
         dc swap color>RGB SetBkColor drop
     ] [
         drop
-        t transparent? set
         font foreground>> [ red>> ] [ green>> ] [ blue>> ] tri :> ( r g b ) 
-        r g b max max  0.7 > [
+        r g b max max 0.65 > [
             { r g b } 0.2 v*n
         ] [
             { 1.0 1.0 1.0 } clone { r g b } v- 0.2 v*n { 1.0 1.0 1.0 } clone swap v-
@@ -86,7 +84,7 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 
 :: render-image ( dc ssa script-string -- image )
     script-string size>> :> size
-    size dc
+    size dc 
     [ ssa size script-string draw-script-string ] make-bitmap-image ;
 
 : set-dc-font ( dc font -- )
@@ -114,19 +112,23 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
         } cleave
     ] with-memory-dc ;
 
-
 :: remove-background ( chroma-key-image foreground-color -- processed-image )
     chroma-key-image [
         first3 :> ( b g r )
         chroma-key-background get { r g b } = [
             { 0 0 0 0 } clone
         ] [
-            { r g b } chroma-key-background get v- norm-sq
             foreground-color [ red>> ] [ green>> ] [ blue>> ] tri
             [ 255 * >integer ] tri@ 3array
-            chroma-key-background get v- norm-sq
-            / 100 * 156 + >integer 255 min :> a 
-            { b g r a }
+            dup { r g b } = [
+                drop
+                { b g r 255 }
+            ] [
+                chroma-key-background get v- norm-sq
+                { r g b } chroma-key-background get v- norm-sq
+                swap / 155 * 100 + >integer 255 min :> a 
+                { b g r a }
+            ] if
         ] if
         -rot chroma-key-image set-pixel-at
     ] each-pixel
@@ -151,13 +153,13 @@ SYMBOL: cached-script-strings
                     dup pick string>> make-ssa
                     dup void* <ref> &ScriptStringFree drop
                     pick render-image
-                    transparent? get [
+                    over font>> background>> alpha>> 1 number= [
                         over font>> foreground>> remove-background
-                    ] when
+                    ] unless
                     >>image
                 ]
             } cleave
-        ] with-memory-dc
+        ] with-memory-dc 
     ] unless image>> ;
 
 [ <cache-assoc> &dispose cached-script-strings set-global ]
