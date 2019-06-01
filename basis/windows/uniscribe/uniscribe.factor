@@ -4,8 +4,8 @@ USING: accessors alien.c-types alien.data arrays assocs cache
 classes.struct combinators destructors fonts init io.encodings.string
 io.encodings.utf16n kernel literals locals math namespaces sequences
 windows.errors windows.fonts windows.gdi32 windows.offscreen
-windows.ole32 windows.types windows.usp10 windows.user32
-colors images math.vectors math.order ;
+windows.ole32 windows.types windows.usp10 colors images math.vectors
+math.order ;
 IN: windows.uniscribe
 
 TUPLE: script-string < disposable font string metrics ssa size image ;
@@ -71,12 +71,11 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 : selection-start/end ( script-string -- iMinSel iMaxSel )
     string>> dup selection? [ [ start>> ] [ end>> ] bi ] [ drop 0 0 ] if ;
 
-:: draw-script-string ( dc ssa size script-string -- )
-    ssa size script-string
+: draw-script-string ( ssa size script-string -- )
     [
         0 ! iX
         0 ! iY
-        ETO_OPAQUE
+        ETO_OPAQUE ! uOptions
     ]
     [ [ { 0 0 } ] dip <RECT> ]
     [ selection-start/end ] tri*
@@ -88,7 +87,7 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
 :: render-image ( dc ssa script-string -- image )
     script-string size>> :> size
     size dc
-    [ dc ssa size script-string draw-script-string ] make-bitmap-image ;
+    [ ssa size script-string draw-script-string ] make-bitmap-image ;
 
 : set-dc-font ( dc font -- )
     cache-font SelectObject win32-error=0/f ;
@@ -115,6 +114,24 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
         } cleave
     ] with-memory-dc ;
 
+
+:: remove-background ( chroma-key-image foreground-color -- processed-image )
+    chroma-key-image [
+        first3 :> ( b g r )
+        chroma-key-background get { r g b } = [
+            { 0 0 0 0 } clone
+        ] [
+            { r g b } chroma-key-background get v- norm-sq
+            foreground-color [ red>> ] [ green>> ] [ blue>> ] tri
+            [ 255 * >integer ] tri@ 3array
+            chroma-key-background get v- norm-sq
+            / 100 * 156 + >integer 255 min :> a 
+            { b g r a }
+        ] if
+        -rot chroma-key-image set-pixel-at
+    ] each-pixel
+    chroma-key-image BGRA >>component-order ;
+
 PRIVATE>
 
 M: script-string dispose*
@@ -125,34 +142,19 @@ SYMBOL: cached-script-strings
 : cached-script-string ( font string -- script-string )
     cached-script-strings get-global [ <script-string> ] 2cache ;
 
-:: script-string>image ( script-string -- image )
-    script-string dup image>> [
+: script-string>image ( script-string -- image )
+    dup image>> [
         [
             {
                 [ over font>> [ set-dc-font ] [ set-dc-colors ] 2bi ]
                 [
                     dup pick string>> make-ssa
                     dup void* <ref> &ScriptStringFree drop
-                    pick render-image :> chroma-key-image
+                    pick render-image
                     transparent? get [
-                        chroma-key-image [
-                            first3 :> ( b g r )
-                            chroma-key-background get { r g b } = [
-                                { 0 0 0 0 }
-                            ] [
-                                { r g b } chroma-key-background get v- norm-sq
-                                script-string font>> foreground>>
-                                [ red>> ] [ green>> ] [ blue>> ] tri
-                                [ 255 * >integer ] tri@ 3array
-                                chroma-key-background get v- norm-sq
-                                / 100 * 156 + >integer 255 min :> a 
-                                { b g r a }
-                            ] if
-                            clone -rot chroma-key-image set-pixel-at
-                        ] each-pixel
-                        BGRA chroma-key-image component-order<<
+                        over font>> foreground>> remove-background
                     ] when
-                    chroma-key-image >>image
+                    >>image
                 ]
             } cleave
         ] with-memory-dc
