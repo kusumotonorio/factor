@@ -113,20 +113,20 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
     ] with-memory-dc ;
 
 :: remove-background ( chroma-key-image foreground-color -- processed-image )
+    chroma-key-background get :> bk-color
+    foreground-color [ red>> ] [ green>> ] [ blue>> ] tri
+    [ 255 * >integer ] tri@ 3array :> text-color
     chroma-key-image [
         first3 :> ( b g r )
-        chroma-key-background get { r g b } = [
+        bk-color { r g b } = [
             { 0 0 0 0 } clone
         ] [
-            foreground-color [ red>> ] [ green>> ] [ blue>> ] tri
-            [ 255 * >integer ] tri@ 3array
-            dup { r g b } = [
-                drop
+            text-color { r g b } = [
                 { b g r 255 }
             ] [
-                chroma-key-background get v- norm-sq
-                { r g b } chroma-key-background get v- norm-sq
-                swap / 155 * 100 + >integer 255 min :> a 
+                { r g b } bk-color v- norm-sq
+                text-color bk-color v- norm-sq
+                / 155 * 100 + >integer 255 min :> a 
                 { b g r a }
             ] if
         ] if
