@@ -116,6 +116,7 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
     chroma-key-background get :> bk-color
     foreground-color [ red>> ] [ green>> ] [ blue>> ] tri
     [ 255 * >integer ] tri@ 3array :> text-color
+    text-color bk-color v- norm-sq :> l-max
     chroma-key-image [
         first3 :> ( b g r )
         bk-color { r g b } = [
@@ -124,9 +125,8 @@ CONSTANT: ssa-dwFlags flags{ SSA_GLYPHS SSA_FALLBACK SSA_TAB }
             text-color { r g b } = [
                 { b g r 255 }
             ] [
-                { r g b } bk-color v- norm-sq
-                text-color bk-color v- norm-sq
-                / 155 * 100 + >integer 255 min :> a 
+                { r g b } bk-color v- norm-sq l-max / 155 * 100 +
+                >integer 255 min :> a 
                 { b g r a }
             ] if
         ] if
