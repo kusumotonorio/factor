@@ -195,9 +195,10 @@ IMPORT: NSAttributedString
     "NSMarkedClauseSegment" <NSString> :> segment-attr
     [ effective-range [ location>> ] [ length>> ] bi + text-length < ] [
         text
+        segment-attr
         effective-range [ location>> ] [ length>> ] bi +
         effective-range >c-ptr
-        -> attributesAtIndex:effectiveRange: drop
+        -> attribute:atIndex:effectiveRange: drop
         1 :> thickness!
         range location>> effective-range location>> = [
             2 thickness!
@@ -427,9 +428,7 @@ IMPORT: NSAttributedString
             self window :> window
             window [
                 window world-focus :> gadget
-                gadget support-input-methods? [
-                    gadget preedit? [ 1 ] [ 0 ] if
-                ] [ 0 ] if
+                gadget preedit? [ 1 ] [ 0 ] if
             ] [ 0 ] if
         ] ;
 
@@ -437,15 +436,13 @@ IMPORT: NSAttributedString
             self window :> window
             window [
                 window world-focus :> gadget
-                gadget support-input-methods? [
-                    gadget preedit? [
-                        gadget preedit-start>> second dup
-                        gadget preedit-end>> second swap -
-                        dup 0 = [ 2drop NSNotFound 0 <NSRange> ] [
-                            <NSRange>
-                        ] if
-                    ] [  NSNotFound 0 <NSRange> ] if
-                ] [ NSNotFound 0 <NSRange> ] if
+                gadget preedit? [
+                    gadget preedit-start>> second dup
+                    gadget preedit-end>> second swap -
+                    dup 0 = [ 2drop NSNotFound 0 <NSRange> ] [
+                        <NSRange>
+                    ] if
+                ] [  NSNotFound 0 <NSRange> ] if
             ] [ NSNotFound 0 <NSRange> ] if 
         ] ;
 
@@ -453,17 +450,16 @@ IMPORT: NSAttributedString
             self window :> window
             window [
                 window world-focus :> gadget
-                gadget support-input-methods? [
-                    gadget preedit? [
-                        gadget preedit-selected-start>> second
-                        gadget preedit-start>> second -
-                        gadget preedit-selected-end>> second
-                        gadget preedit-selected-start>> second -
-                        <NSRange>
-                    ] [ 
-                        gadget editor-selected-range <NSRange>
-                    ] if
-                ] [ 0 0  <NSRange> ] if
+                gadget preedit? [
+                    gadget {
+                        [ preedit-selected-start>> second ]
+                        [ preedit-start>> second - ]
+                        [ preedit-selected-end>> second ]
+                        [ preedit-selected-start>> second - ]
+                    } cleave <NSRange>
+                ] [ 
+                    gadget editor-selected-range <NSRange>
+                ] if
             ] [ 0 0 <NSRange> ] if 
         ] ;
 
@@ -604,7 +600,6 @@ IMPORT: NSAttributedString
 
     METHOD: void windowDidChangeBackingProperties: id notification
     [
-
         notification -> object dup SEL: backingScaleFactor
         -> respondsToSelector: c-bool> [
             { double { id SEL } } ?-> backingScaleFactor

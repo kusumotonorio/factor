@@ -316,6 +316,8 @@ M: editor gadget-text* editor-string % ;
     f >>preedit-end
     f >>preedit-selected-start
     f >>preedit-selected-end
+    f >>preedit-candidate?
+    f >>preedit-underlines
     drop ;
 
 : editor-selected-range ( editor -- location length )
