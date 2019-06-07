@@ -600,6 +600,7 @@ IMPORT: NSAttributedString
 
     METHOD: void windowDidChangeBackingProperties: id notification
     [
+
         notification -> object dup SEL: backingScaleFactor
         -> respondsToSelector: c-bool> [
             { double { id SEL } } ?-> backingScaleFactor
