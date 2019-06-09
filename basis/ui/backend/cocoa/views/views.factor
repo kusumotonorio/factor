@@ -517,9 +517,11 @@ IMPORT: NSAttributedString
                 window world-focus :> gadget
                 gadget screen-loc
                 gadget editor-caret first range location>> 2array gadget loc>x dup :> xl
-                gadget caret-loc second gadget caret-dim second + 22 + 
+                gadget caret-loc second gadget caret-dim second + 
                 [ >fixnum ] bi@ 2array v+ { 1 -1 } v*
-                window window-loc>> v+ first2
+                window handle>> window>> dup -> frame -> contentRectForFrameRect:
+                CGRect-top-left 2array
+                v+ first2
                 gadget editor-caret first range [ location>> ] [ length>> ] bi + 2array
                 gadget [ loc>x xl - ] [ line-height ] bi [ >fixnum ] bi@
                 <CGRect>
@@ -527,7 +529,7 @@ IMPORT: NSAttributedString
                 100 100 0 0 <CGRect>
             ] if
         ] ;
-        
+
     METHOD: NSInteger conversationIdentifier [ self alien-address ] ;
 
     ! Initialization
