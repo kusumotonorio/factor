@@ -249,6 +249,7 @@ IMPORT: NSAttributedString
                 cached-lines get-global clear-assoc
             ] [ drop ] if
 
+            self -> update
         ] when
     ] ;
 
