@@ -8,7 +8,7 @@ core-graphics core-graphics.types core-text io.encodings.utf8
 kernel literals locals math math.order math.parser
 math.rectangles namespaces opengl sequences splitting threads
 ui.commands ui.gadgets ui.gadgets.private ui.gadgets.worlds
-ui.gestures ui.private words sorting documents math.vectors
+ui.gestures ui.private words sorting math.vectors
 ui.baseline-alignment ui.gadgets.line-support
 ui.gadgets.editors ui.backend.cocoa.input-methods
 ui.backend.cocoa.input-methods.editors ;
@@ -414,14 +414,9 @@ IMPORT: NSAttributedString
                 window world-focus :> gadget
                 gadget support-input-methods? [
                     gadget preedit? [
-                        gadget
-                        [ remove-preedit-text ]
-                        [ remove-preedit-info ] bi
-                        text CF>string  gadget user-input* drop
-                    ] [
-                        text CF>string
-                        gadget user-input* drop
-                    ] if
+                        gadget [ remove-preedit-text ] [ remove-preedit-info ] bi
+                    ] when
+                    text CF>string gadget user-input* drop                    
                     f gadget preedit-candidate?<<
                 ] [ 
                     text CF>string window user-input
@@ -444,9 +439,7 @@ IMPORT: NSAttributedString
                 gadget preedit? [
                     gadget preedit-start>> second dup
                     gadget preedit-end>> second swap -
-                    dup 0 = [ 2drop NSNotFound 0 <NSRange> ] [
-                        <NSRange>
-                    ] if
+                    dup 0 = [ 2drop NSNotFound 0 ] when <NSRange>
                 ] [  NSNotFound 0 <NSRange> ] if
             ] [ NSNotFound 0 <NSRange> ] if 
         ] ;
@@ -466,15 +459,15 @@ IMPORT: NSAttributedString
                     ] [ 
                         gadget editor-selected-range <NSRange>
                     ] if
-                ] [ 0 0  <NSRange> ] if
+                ] [ 0 0 <NSRange> ] if
             ] [ 0 0 <NSRange> ] if 
         ] ;
     
     METHOD: void setMarkedText: id text selectedRange: NSRange range [    
             self window :> window
-            window world-focus :> gadget
             { } clone :> underlines!
             window [
+                window world-focus :> gadget
                 "" clone :> str!
                 text NSString -> class -> isKindOfClass: 0 = not [
                     text CF>string str!               
