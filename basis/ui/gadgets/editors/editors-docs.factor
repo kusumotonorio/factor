@@ -21,7 +21,10 @@ $nl
     { { $snippet "preedit-selected-end" } " - a line/column pair or " { $link f } ". It represents the end point of the string being selected by an input method." }
     { { $snippet "preedit-selection-mode?" } " - a boolean. It means the mode of selecting convertion caditate word. The caret in an editor is not drawn if it is true." }
     { { $snippet "preedit-underlines" } " - an array or " { $link f } ". It stores underline attributes for its preedit area." }
-} }
+}
+$nl
+"Slots that are prefixed with \"preedit-\" should not be modified directly. They are changed by platform-dependent backend."
+}
 { $see-also line-gadget } ;
 
 HELP: <editor>
