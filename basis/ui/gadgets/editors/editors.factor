@@ -18,7 +18,7 @@ TUPLE: editor < line-gadget
     preedit-end
     preedit-selected-start
     preedit-selected-end
-    preedit-candidate?
+    preedit-selection-mode?
     preedit-underlines ;
 
 GENERIC: preedit? ( gadget -- ? )
@@ -168,7 +168,7 @@ M: editor ungraft*
 
 : draw-caret? ( editor -- ? )
     { [ focused?>> ] [ blink>> ]
-      [ [ preedit? not ] [ preedit-candidate?>> not ] bi or ] } 1&& ;
+      [ [ preedit? not ] [ preedit-selection-mode?>> not ] bi or ] } 1&& ;
 
 : draw-caret ( editor -- )
     dup draw-caret? [
@@ -316,12 +316,9 @@ M: editor gadget-text* editor-string % ;
     f >>preedit-end
     f >>preedit-selected-start
     f >>preedit-selected-end
-    f >>preedit-candidate?
+    f >>preedit-selection-mode?
     f >>preedit-underlines
     drop ;
-
-: editor-selected-range ( editor -- location length )
-    [ editor-mark second ] [ editor-caret second ] bi sort-pair over - ;
 
 : mouse-elt ( -- element )
     hand-click# get {

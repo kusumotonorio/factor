@@ -184,12 +184,14 @@ M: send-touchbar-command send-queued-gesture
         yield
     ] [ 3drop ] if ;
 
-: editor-selected-range ( editor -- location length )
-    [ editor-mark second ] [ editor-caret second ] bi sort-pair over - ;
-
 CONSTANT: NSNotFound 9223372036854775807 inline
 
 IMPORT: NSAttributedString
+
+<PRIVATE
+
+: editor-selected-range ( editor -- location length )
+    [ editor-mark second ] [ editor-caret second ] bi sort-pair over - ;
 
 :: make-preedit-underlines ( gadget text range -- underlines )
     { } clone :> underlines!
@@ -205,7 +207,7 @@ IMPORT: NSAttributedString
         1 :> thickness!
         range location>> effective-range location>> = [
             2 thickness!
-            t gadget preedit-candidate?<<
+            t gadget preedit-selection-mode?<<
         ] when
         underlines
         effective-range [ location>> ] [ length>> ] bi over +
@@ -231,6 +233,8 @@ IMPORT: NSAttributedString
     gadget preedit-start>> gadget preedit-end>> = [
         gadget remove-preedit-info 
     ] when ;
+
+PRIVATE>
 
 <CLASS: FactorView < NSOpenGLView
     COCOA-PROTOCOL: NSTextInput
@@ -417,7 +421,7 @@ IMPORT: NSAttributedString
                         gadget [ remove-preedit-text ] [ remove-preedit-info ] bi
                     ] when
                     text CF>string gadget user-input* drop                    
-                    f gadget preedit-candidate?<<
+                    f gadget preedit-selection-mode?<<
                 ] [ 
                     text CF>string window user-input
                 ] if
@@ -498,7 +502,7 @@ IMPORT: NSAttributedString
                         gadget [ remove-preedit-text ] [ remove-preedit-info ] bi
                         gadget user-input* drop
                     ] when
-                    f gadget preedit-candidate?<<
+                    f gadget preedit-selection-mode?<<
                 ] when
             ] when
         ] ;
