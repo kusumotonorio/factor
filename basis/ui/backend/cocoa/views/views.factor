@@ -214,7 +214,11 @@ IMPORT: NSAttributedString
         2array thickness 2array
         suffix underlines! 
     ] while
-    underlines ;
+    underlines length 1 = [
+        underlines first first 2 2array 1array  ! thickness: 2
+    ] [
+        underlines
+    ] if ;
 
 :: update-marked-text ( gadget str range -- )
     gadget preedit? [
