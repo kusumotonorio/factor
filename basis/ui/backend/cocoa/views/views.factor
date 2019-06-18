@@ -194,6 +194,7 @@ IMPORT: NSAttributedString
     [ editor-mark second ] [ editor-caret second ] bi sort-pair over - ;
 
 :: make-preedit-underlines ( gadget text range -- underlines )
+    f gadget preedit-selection-mode?<<
     { } clone :> underlines!
     text -> length :> text-length
     0 0 <NSRange> :> effective-range
@@ -521,21 +522,25 @@ PRIVATE>
 
     METHOD: NSRect firstRectForCharacterRange: NSRange range [
             self window :> window
-            window world-focus support-input-methods? [
-                window world-focus :> gadget
-                gadget screen-loc
-                gadget editor-caret first range location>> 2array gadget loc>x dup :> xl
-                gadget caret-loc second gadget caret-dim second + 
-                [ >fixnum ] bi@ 2array v+ { 1 -1 } v*
-                window handle>> window>> dup -> frame -> contentRectForFrameRect:
-                CGRect-top-left 2array
-                v+ first2
-                gadget editor-caret first range [ location>> ] [ length>> ] bi + 2array
-                gadget [ loc>x xl - ] [ line-height ] bi [ >fixnum ] bi@
-                <CGRect>
+            window [
+                window world-focus support-input-methods? [
+                    window world-focus :> gadget
+                    gadget screen-loc
+                    gadget editor-caret first range location>> 2array gadget loc>x dup :> xl
+                    gadget caret-loc second gadget caret-dim second + 
+                    [ >fixnum ] bi@ 2array v+ { 1 -1 } v*
+                    window handle>> window>> dup -> frame -> contentRectForFrameRect:
+                    CGRect-top-left 2array
+                    v+ first2
+                    gadget editor-caret first range [ location>> ] [ length>> ] bi + 2array
+                    gadget [ loc>x xl - ] [ line-height ] bi [ >fixnum ] bi@
+                    <CGRect>
+                ] [
+                    100 100 0 0 <CGRect>
+                ] if
             ] [
                 100 100 0 0 <CGRect>
-            ] if
+            ] if    
         ] ;
 
     METHOD: NSInteger conversationIdentifier [ self alien-address ] ;

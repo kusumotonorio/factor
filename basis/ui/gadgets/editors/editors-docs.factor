@@ -23,7 +23,7 @@ $nl
     { { $snippet "preedit-underlines" } " - an array or " { $link f } ". It stores underline attributes for its preedit area." }
 }
 $nl
-" Slots that are prefixed with \"preedit-\" should not be modified directly. They are changed by the platform-dependent backend (currently only Mac's one)."
+" Slots that are prefixed with \"preedit-\" should not be modified directly. They are changed by the platform-dependent backend."
 }
 { $see-also line-gadget } ;
 
