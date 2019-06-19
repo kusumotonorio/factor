@@ -420,15 +420,21 @@ PRIVATE>
         [
             self window :> window
             window [
+                "" clone :> str!
+                text NSString -> class -> isKindOfClass: 0 = not [
+                    text CF>string str!               
+                ] [
+                    text -> string CF>string str!               
+                ] if
                 window world-focus :> gadget
                 gadget support-input-methods? [
                     gadget preedit? [
                         gadget [ remove-preedit-text ] [ remove-preedit-info ] bi
                     ] when
-                    text CF>string gadget user-input* drop                    
+                    str gadget user-input* drop                    
                     f gadget preedit-selection-mode?<<
                 ] [ 
-                    text CF>string window user-input
+                    str window user-input
                 ] if
             ] when
         ] ;
@@ -535,12 +541,8 @@ PRIVATE>
                     gadget editor-caret first range [ location>> ] [ length>> ] bi + 2array
                     gadget [ loc>x xl - ] [ line-height ] bi [ >fixnum ] bi@
                     <CGRect>
-                ] [
-                    100 100 0 0 <CGRect>
-                ] if
-            ] [
-                100 100 0 0 <CGRect>
-            ] if    
+                ] [ 100 100 0 0 <CGRect> ] if
+            ] [ 100 100 0 0 <CGRect> ] if    
         ] ;
 
     METHOD: NSInteger conversationIdentifier [ self alien-address ] ;
