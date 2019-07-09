@@ -11,7 +11,8 @@ ui.commands ui.gadgets ui.gadgets.private ui.gadgets.worlds
 ui.gestures ui.private words sorting math.vectors
 ui.baseline-alignment ui.gadgets.line-support
 ui.gadgets.editors ui.backend.cocoa.input-methods
-ui.backend.cocoa.input-methods.editors ;
+ui.backend.cocoa.input-methods.editors io.encodings.utf16n
+io.encodings.string ;
 IN: ui.backend.cocoa.views
 
 : send-mouse-moved ( view event -- )
@@ -190,9 +191,6 @@ IMPORT: NSAttributedString
 
 <PRIVATE
 
-: editor-selected-range ( editor -- location length )
-    [ editor-mark second ] [ editor-caret second ] bi sort-pair over - ;
-
 :: make-preedit-underlines ( gadget text range -- underlines )
     f gadget preedit-selection-mode?<<
     { } clone :> underlines!
@@ -215,6 +213,21 @@ IMPORT: NSAttributedString
         2array thickness 2array
         suffix underlines! 
     ] while
+
+    { } clone :> underlines2!
+    text -> string CF>string :> str
+    str utf16n encode :> byte-16n
+    0 :> cp-loc!
+    underlines
+    [| elt | 
+     elt [ first first 2 * ] [ first second 2 * ] bi
+     byte-16n subseq utf16n decode length :> len
+     underlines2
+     cp-loc cp-loc len + dup cp-loc!
+     2array elt second 2array suffix underlines2!
+    ] each
+    underlines2 underlines!
+    
     underlines length 1 = [
         underlines first first 2 2array 1array  ! thickness: 2
     ] [
@@ -232,8 +245,13 @@ IMPORT: NSAttributedString
     
     gadget preedit-start>> 0 range location>> 2array v+ 
     gadget preedit-selected-start<<
-    gadget preedit-selected-start>> 0 range length>> 2array v+ 
-    dup gadget preedit-selected-end<<            
+    gadget preedit-selected-start>>
+    0
+    ! str length ! range length>>
+    range location>> dup range length>> +
+    str utf16n encode subseq length 2 / >integer 
+    2array v+ 
+    dup gadget preedit-selected-end<<
     dup gadget set-caret gadget set-mark                    
     gadget preedit-start>> gadget preedit-end>> = [
         gadget remove-preedit-info 
@@ -452,11 +470,16 @@ PRIVATE>
             window [
                 window world-focus :> gadget
                 gadget preedit? [
-                    gadget preedit-start>> second dup
-                    gadget preedit-end>> second swap -
-                    dup 0 = [ 2drop NSNotFound 0 ] when <NSRange>
+                    gadget preedit-end>> second
+                    gadget preedit-start>> second dup rot -
+                    0 = [ drop NSNotFound 0 ] [
+                        dup
+                        gadget preedit-end>> second
+                        gadget preedit-start>> first gadget editor-line
+                        subseq utf16n encode length 2 / >integer
+                    ] if <NSRange>
                 ] [  NSNotFound 0 <NSRange> ] if
-            ] [ NSNotFound 0 <NSRange> ] if 
+            ] [ NSNotFound 0 <NSRange> ] if
         ] ;
 
     METHOD: NSRange selectedRange [
@@ -467,15 +490,15 @@ PRIVATE>
                     gadget preedit? [
                         gadget {
                             [ preedit-selected-start>> second ]
-                            [ preedit-start>> second - ]
+                            [ preedit-start>> second - ]                 
+                            [ preedit-selected-start>> second ]
                             [ preedit-selected-end>> second ]
-                            [ preedit-selected-start>> second - ]
+                            [ preedit-start>> first gadget editor-line
+                              subseq utf16n encode length 2 / >integer ]
                         } cleave <NSRange>
-                    ] [ 
-                        gadget editor-selected-range <NSRange>
-                    ] if
-                ] [ 0 0 <NSRange> ] if
-            ] [ 0 0 <NSRange> ] if 
+                    ] [ NSNotFound 0 <NSRange> ] if ! must be fixed?
+                ] [ NSNotFound 0 <NSRange> ] if
+            ] [ NSNotFound 0 <NSRange> ] if 
         ] ;
     
     METHOD: void setMarkedText: id text selectedRange: NSRange range [    
