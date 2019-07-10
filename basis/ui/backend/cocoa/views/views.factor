@@ -191,6 +191,15 @@ IMPORT: NSAttributedString
 
 <PRIVATE
 
+:: previous-caret/mark ( editor -- loc )
+    editor editor-caret :> caret
+    editor editor-mark :> mark
+    caret first mark first = [
+        caret second mark second < [ caret ] [ mark ] if
+    ] [
+        caret first mark first < [ caret ] [ mark ] if
+    ] if ;
+
 :: make-preedit-underlines ( gadget text range -- underlines )
     f gadget preedit-selection-mode?<<
     { } clone :> underlines!
@@ -238,7 +247,7 @@ IMPORT: NSAttributedString
     gadget preedit? [
         gadget remove-preedit-text
     ] when
-    gadget editor-caret dup
+    gadget previous-caret/mark dup
     gadget preedit-start<<
     0 str length 2array v+ gadget preedit-end<<
     str gadget user-input* drop
@@ -496,9 +505,9 @@ PRIVATE>
                             [ preedit-start>> first gadget editor-line
                               subseq utf16n encode length 2 / >integer ]
                         } cleave <NSRange>
-                    ] [ NSNotFound 0 <NSRange> ] if ! must be fixed?
-                ] [ NSNotFound 0 <NSRange> ] if
-            ] [ NSNotFound 0 <NSRange> ] if 
+                    ] [ gadget previous-caret/mark second 0 <NSRange> ] if
+                ] [ 0 0 <NSRange> ] if
+            ] [ 0 0 <NSRange> ] if 
         ] ;
     
     METHOD: void setMarkedText: id text selectedRange: NSRange range [    
