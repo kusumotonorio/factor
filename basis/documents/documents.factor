@@ -135,6 +135,17 @@ PRIVATE>
         new-to document update-locs
     ] unless ;
 
+:: set-doc-range* ( string from to document -- )
+    from to = string empty? and [
+        string split-lines :> new-lines
+        new-lines from text+loc :> new-to
+        ! from to document doc-range :> old-string
+        ! old-string string from to new-to <edit> document add-undo
+        new-lines from to document [ (set-doc-range) ] models:change-model
+        new-to document update-locs
+    ] unless ;
+
+
 : change-doc-range ( from to document quot -- )
     '[ doc-range @ ] 3keep set-doc-range ; inline
 

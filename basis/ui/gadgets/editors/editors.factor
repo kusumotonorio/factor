@@ -292,6 +292,9 @@ M: editor gadget-selection
 M: editor user-input*
     [ selection-start/end ] [ model>> ] bi set-doc-range t ;
 
+M: editor temp-im-input
+    [ selection-start/end ] [ model>> ] bi set-doc-range* t ;
+
 : editor-string ( editor -- string )
     model>> doc-string ;
 

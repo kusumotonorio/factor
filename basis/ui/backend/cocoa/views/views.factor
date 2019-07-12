@@ -191,7 +191,7 @@ IMPORT: NSAttributedString
 
 <PRIVATE
 
-:: previous-caret/mark ( editor -- loc )
+:: earlier-caret/mark ( editor -- loc )
     editor editor-caret :> caret
     editor editor-mark :> mark
     caret first mark first = [
@@ -205,6 +205,9 @@ IMPORT: NSAttributedString
     { } clone :> underlines!
     text -> length :> text-length
     0 0 <NSRange> :> effective-range
+    text -> string CF>string :> str
+    str utf16n encode :> byte-16n
+    0 :> cp-loc!    
     "NSMarkedClauseSegment" <NSString> :> segment-attr
     [ effective-range [ location>> ] [ length>> ] bi + text-length < ] [
         text
@@ -219,23 +222,11 @@ IMPORT: NSAttributedString
         ] when
         underlines
         effective-range [ location>> ] [ length>> ] bi over +
+        [ 2 * ] bi@ byte-16n subseq utf16n decode length :> len
+        cp-loc cp-loc len + dup cp-loc!
         2array thickness 2array
         suffix underlines! 
     ] while
-
-    { } clone :> underlines2!
-    text -> string CF>string :> str
-    str utf16n encode :> byte-16n
-    0 :> cp-loc!
-    underlines
-    [| elt | 
-     elt [ first first 2 * ] [ first second 2 * ] bi
-     byte-16n subseq utf16n decode length :> len
-     underlines2
-     cp-loc cp-loc len + dup cp-loc!
-     2array elt second 2array suffix underlines2!
-    ] each
-    underlines2 underlines!
     
     underlines length 1 = [
         underlines first first 2 2array 1array  ! thickness: 2
@@ -247,16 +238,15 @@ IMPORT: NSAttributedString
     gadget preedit? [
         gadget remove-preedit-text
     ] when
-    gadget previous-caret/mark dup
+    gadget earlier-caret/mark dup
     gadget preedit-start<<
     0 str length 2array v+ gadget preedit-end<<
-    str gadget user-input* drop
+    str gadget temp-im-input drop
     
     gadget preedit-start>> 0 range location>> 2array v+ 
     gadget preedit-selected-start<<
     gadget preedit-selected-start>>
     0
-    ! str length ! range length>>
     range location>> dup range length>> +
     str utf16n encode subseq length 2 / >integer 
     2array v+ 
@@ -442,7 +432,6 @@ PRIVATE>
     ] ;
 
     ! Text input
-
     METHOD: void insertText: id text replacementRange: NSRange replacementRange
         [
             self window :> window
@@ -505,7 +494,7 @@ PRIVATE>
                             [ preedit-start>> first gadget editor-line
                               subseq utf16n encode length 2 / >integer ]
                         } cleave <NSRange>
-                    ] [ gadget previous-caret/mark second 0 <NSRange> ] if
+                    ] [ gadget earlier-caret/mark second 0 <NSRange> ] if
                 ] [ 0 0 <NSRange> ] if
             ] [ 0 0 <NSRange> ] if 
         ] ;
@@ -554,7 +543,6 @@ PRIVATE>
     METHOD: id validAttributesForMarkedText [             
             NSArray "NSMarkedClauseSegment" <NSString> -> arrayWithObject:
         ] ;
-    
 
     METHOD: id attributedSubstringFromRange: NSRange range
                                 actualRange: NSRange * actualRange [ f ] ;
