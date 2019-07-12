@@ -259,6 +259,7 @@ IMPORT: NSAttributedString
 PRIVATE>
 
 <CLASS: FactorView < NSOpenGLView
+!    COCOA-PROTOCOL: NSTextInput
     COCOA-PROTOCOL: NSTextInputClient
 
     METHOD: void prepareOpenGL [
@@ -432,8 +433,7 @@ PRIVATE>
     ] ;
 
     ! Text input
-    METHOD: void insertText: id text replacementRange: NSRange replacementRange
-        [
+    METHOD: void insertText: id text replacementRange: NSRange replacementRange [
             self window :> window
             window [
                 "" clone :> str!
@@ -544,13 +544,13 @@ PRIVATE>
             NSArray "NSMarkedClauseSegment" <NSString> -> arrayWithObject:
         ] ;
 
-    METHOD: id attributedSubstringFromRange: NSRange range
-                                actualRange: NSRange * actualRange [ f ] ;
+    METHOD: id attributedSubstringForProposedRange: NSRange range
+                                       actualRange: id actualRange [ f ] ;
     
     METHOD: NSUInteger characterIndexForPoint: NSPoint point [ 0 ] ;
 
     METHOD: NSRect firstRectForCharacterRange: NSRange range
-                                  actualRange: NSRange * actualRange [
+                                  actualRange: id actualRange [  
             self window :> window
             window [
                 window world-focus support-input-methods? [
@@ -568,7 +568,7 @@ PRIVATE>
                 ] [ 100 100 0 0 <CGRect> ] if
             ] [ 100 100 0 0 <CGRect> ] if    
         ] ;
-
+    
     ! Initialization
     METHOD: void updateFactorGadgetSize: id notification
     [
