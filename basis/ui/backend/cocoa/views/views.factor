@@ -243,13 +243,17 @@ IMPORT: NSAttributedString
     0 str length 2array v+ gadget preedit-end<<
     str gadget temp-im-input drop
     
-    gadget preedit-start>> 0 range location>> 2array v+ 
+    gadget preedit-start>>
+    0
+    0 range location>> 2 * str utf16n encode subseq utf16n decode length
+    2array v+
     gadget preedit-selected-start<<
+    
     gadget preedit-selected-start>>
     0
-    range location>> dup range length>> +
-    str utf16n encode subseq length 2 / >integer 
-    2array v+ 
+    range location>> dup range length>> + [ 2 * ] bi@
+    str utf16n encode subseq utf16n decode length
+    2array v+
     dup gadget preedit-selected-end<<
     dup gadget set-caret gadget set-mark                    
     gadget preedit-start>> gadget preedit-end>> = [
@@ -258,9 +262,11 @@ IMPORT: NSAttributedString
 
 PRIVATE>
 
+ERROR: ime-test ;
+
 <CLASS: FactorView < NSOpenGLView
-!    COCOA-PROTOCOL: NSTextInput
     COCOA-PROTOCOL: NSTextInputClient
+!    COCOA-PROTOCOL: NSTextInput
 
     METHOD: void prepareOpenGL [
 
@@ -500,7 +506,7 @@ PRIVATE>
         ] ;
     
     METHOD: void setMarkedText: id text selectedRange: NSRange selectedRange
-                                     replacementRange: NSRange replacementRange [    
+                                     replacementRange: NSRange replacementRange [           
             self window :> window
             { } clone :> underlines!
             window [
@@ -520,7 +526,7 @@ PRIVATE>
                 ] when
             ] when
         ] ;
-    
+             
     METHOD: void unmarkText [ 
             self window :> window
             window [
@@ -568,6 +574,75 @@ PRIVATE>
                 ] [ 100 100 0 0 <CGRect> ] if
             ] [ 100 100 0 0 <CGRect> ] if    
         ] ;
+
+    
+    ! NSTextInput
+    METHOD: void insertText: id text [
+            self window :> window
+            window [
+                "" clone :> str!
+                text NSString -> class -> isKindOfClass: 0 = not [
+                    text CF>string str!               
+                ] [
+                    text -> string CF>string str!               
+                ] if
+                window world-focus :> gadget
+                gadget support-input-methods? [
+                    gadget preedit? [
+                        gadget [ remove-preedit-text ] [ remove-preedit-info ] bi
+                    ] when
+                    str gadget user-input* drop                    
+                    f gadget preedit-selection-mode?<<
+                ] [ 
+                    str window user-input
+                ] if
+            ] when
+        ] ;
+
+    METHOD: void setMarkedText: id text selectedRange: NSRange selectedRange [
+            self window :> window
+            { } clone :> underlines!
+            window [
+                window world-focus :> gadget
+                "" clone :> str!
+                text NSString -> class -> isKindOfClass: 0 = not [
+                    text CF>string str!               
+                ] [
+                    text -> string CF>string str!               
+                    gadget support-input-methods? [
+                        gadget text selectedRange make-preedit-underlines underlines!
+                    ] when
+                ] if
+                gadget support-input-methods? [
+                    gadget str selectedRange update-marked-text                   
+                    underlines gadget preedit-underlines<<
+                ] when
+            ] when
+        ] ;
+
+    METHOD: NSRect firstRectForCharacterRange: NSRange range [
+            self window :> window
+            window [
+                window world-focus support-input-methods? [
+                    window world-focus :> gadget
+                    gadget screen-loc
+                    gadget editor-caret first range location>> 2array gadget loc>x dup :> xl
+                    gadget caret-loc second gadget caret-dim second + 
+                    [ >fixnum ] bi@ 2array v+ { 1 -1 } v*
+                    window handle>> window>> dup -> frame -> contentRectForFrameRect:
+                    CGRect-top-left 2array
+                    v+ first2
+                    gadget editor-caret first range [ location>> ] [ length>> ] bi + 2array
+                    gadget [ loc>x xl - ] [ line-height ] bi [ >fixnum ] bi@
+                    <CGRect>
+                ] [ 100 100 0 0 <CGRect> ] if
+            ] [ 100 100 0 0 <CGRect> ] if    
+        ] ;
+
+    METHOD: id attributedSubstringFromRange: NSRange range [ f ] ;
+
+    METHOD: NSInteger conversationIdentifier [ self alien-address ] ;
+
     
     ! Initialization
     METHOD: void updateFactorGadgetSize: id notification
