@@ -48,7 +48,7 @@ HELP: user-input*
 
 HELP: temp-im-input
 { $values { "str" string } { "gadget" gadget } { "?" boolean } }
-{ $contract "Handle free-form textual input while the gadget has keyboard focus. This is used to display the string being preedited by an input method on the gadget. Input by this word is not subject to undo or redo." } ;
+{ $contract "Handle free-form textual input while the gadget has keyboard focus. This is used to display the string being preedited by an input method on the gadget. Input by this word is not include changes in the Undo and Redo actions." } ;
 
 HELP: pick-up
 { $values { "point" "a pair of integers" } { "gadget" gadget } { "child/f" { $maybe gadget } } }
