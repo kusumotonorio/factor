@@ -178,7 +178,7 @@ M: editor ungraft*
     ] [ drop ] if ;
 
 :: draw-preedit-underlines ( editor -- )
-    editor preedit? [
+    editor [ preedit? ] [ preedit-underlines>> ] bi and [
         editor [ caret-loc second ] [ caret-dim second ] bi + 2.0 - :> y
         editor editor-caret first :> row
         editor font>> foreground>> gl-color
@@ -186,8 +186,8 @@ M: editor ungraft*
             GL_LINE_BIT [
                 dup second glLineWidth
                 first editor preedit-start>> second dup 2array v+ first2 
-                [ row swap 2array editor loc>x 2.0 + y 2array ]
-                [ row swap 2array editor loc>x 2.0 - y 2array ]
+                [ row swap 2array editor loc>x 1.0 + y 2array ]
+                [ row swap 2array editor loc>x 1.0 - y 2array ]
                 bi*
                 gl-line
             ] do-attribs
@@ -595,6 +595,8 @@ PRIVATE>
 
 : change-selection ( editor quot -- )
     '[ gadget-selection @ ] [ user-input* drop ] bi ; inline
+
+
 
 <PRIVATE
 
